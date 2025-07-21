@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 소리나는 낱말 퀴즈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Dongle:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        h1, h2, .font-dongle {
+            font-family: 'Dongle', sans-serif;
+            font-weight: 700;
+        }
+        .category-btn.selected {
+            background-color: #F59E0B; /* amber-500 */
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes bounce-in {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .animate-bounce-in {
+            animation: bounce-in 0.5s ease-out;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-yellow-50 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-3xl mx-auto">
+        <!-- 1. 설정 화면 -->
+        <div id="setupView" class="w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-10 text-center">
+            <h1 class="text-7xl sm:text-8xl text-yellow-600">AI 소리나는 낱말 퀴즈</h1>
+            
+            <h2 class="text-5xl text-gray-700 mt-8 mb-4">1. 학습 단계 선택하기</h2>
+            <div id="categoryContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                <button data-category="cat1" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침없는 낱말 (ㅏ,ㅣ..)</button>
+                <button data-category="cat2" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침있는 낱말 (ㅏ,ㅣ..)</button>
+                <button data-category="cat3" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침없는 낱말 (ㅑ,ㅘ..)</button>
+                <button data-category="cat4" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침있는 낱말 (ㅑ,ㅘ..)</button>
+                <button data-category="cat5" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">단어</button>
+                <button data-category="cat6" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">문장</button>
+            </div>
+
+            <h2 class="text-5xl text-gray-700 mt-8 mb-4">2. 문항 수 정하기</h2>
+            <div class="flex justify-center items-center gap-4">
+                <input type="number" id="questionCount" class="w-24 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg p-2 focus:border-yellow-500 focus:ring-yellow-500" value="10" min="1" max="20">
+                <span class="text-2xl font-bold text-gray-600">문제</span>
+            </div>
+
+            <button id="startButton" class="w-full mt-10 bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 flex items-center justify-center">
+                <span id="startButtonText" class="block text-5xl sm:text-6xl font-dongle py-2">퀴즈 시작!</span>
+                <div id="loadingIndicator" class="hidden loader"></div>
+            </button>
+        </div>
+
+        <!-- 2. 퀴즈 화면 -->
+        <div id="quizView" class="hidden w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-10 text-center relative">
+            <button id="backButton" class="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold py-2 px-4 rounded-lg transition-all">&larr; 돌아가기</button>
+            
+            <p id="progressIndicator" class="text-2xl font-bold text-gray-500 mb-2">문제 1 / 10</p>
+            <p id="message" class="text-3xl text-gray-700 font-bold h-12 flex items-center justify-center mb-6">소리를 듣고 정답을 골라봐!</p>
+
+            <div class="mb-8">
+                <button id="playButton" class="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center mx-auto shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 sm:h-20 sm:w-20" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="choicesContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button class="choice p-4 text-3xl sm:text-4xl font-bold text-white rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-4"></button>
+                <button class="choice p-4 text-3xl sm:text-4xl font-bold text-white rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-4"></button>
+                <button class="choice p-4 text-3xl sm:text-4xl font-bold text-white rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-4"></button>
+            </div>
+        </div>
+
+        <!-- 3. 결과 화면 -->
+        <div id="resultView" class="hidden w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-10 text-center">
+            <h1 class="text-7xl sm:text-8xl text-yellow-600">참 잘했어요!</h1>
+            <div class="my-8 bg-yellow-100 rounded-xl p-6">
+                <p class="text-3xl sm:text-4xl font-bold text-gray-700">총 <span id="totalResult" class="text-blue-600">10</span>문제 중</p>
+                <p class="text-6xl sm:text-7xl font-black text-blue-600 my-2"><span id="scoreResult">0</span><span class="text-4xl sm:text-5xl ml-2">개</span></p>
+                <p class="text-3xl sm:text-4xl font-bold text-gray-700">맞혔어요!</p>
+            </div>
+            <p id="finalMessage" class="text-3xl font-bold mb-8"></p>
+            <button id="restartButton" class="w-full bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                <span class="block text-5xl sm:text-6xl font-dongle py-2">다시 연습하기</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 카테고리 설명
+        const categoryPrompts = {
+            cat1: "받침이 없고 'ㅏ, ㅓ, ㅗ, ㅜ, ㅡ, ㅣ' 같은 단모음만 사용한, 초등학생 저학년 수준의 한글 낱말",
+            cat2: "받침이 있고 'ㅏ, ㅓ, ㅗ, ㅜ, ㅡ, ㅣ' 같은 단모음만 사용한, 초등학생 저학년 수준의 한글 낱말",
+            cat3: "받침이 없고 'ㅑ, ㅕ, ㅘ, ㅝ' 같은 이중모음이 포함된, 초등학생 저학년 수준의 한글 낱말",
+            cat4: "받침이 있고 'ㅑ, ㅕ, ㅘ, ㅝ' 같은 이중모음이 포함된, 초등학생 저학년 수준의 한글 낱말",
+            cat5: "초등학생 저학년 수준의 일반적인 두세 글자 한글 단어",
+            cat6: "초등학생 저학년 수준의 3~5개 어절로 이루어진 짧고 간단한 한글 문장"
+        };
+        
+        const colors = [ 'bg-blue-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500' ];
+
+        // DOM 요소
+        const setupView = document.getElementById('setupView');
+        const quizView = document.getElementById('quizView');
+        const resultView = document.getElementById('resultView');
+        const categoryContainer = document.getElementById('categoryContainer');
+        const startButton = document.getElementById('startButton');
+        const startButtonText = document.getElementById('startButtonText');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const playButton = document.getElementById('playButton');
+        const choiceButtons = document.querySelectorAll('.choice');
+        const messageEl = document.getElementById('message');
+        const progressIndicator = document.getElementById('progressIndicator');
+        const backButton = document.getElementById('backButton');
+        const restartButton = document.getElementById('restartButton');
+
+        // 퀴즈 상태 변수
+        let currentCategory = 'cat5';
+        let totalQuestions = 10;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentQuizSet = [];
+        let currentAnswer = '';
+        let isChecking = false;
+
+        const synth = window.speechSynthesis;
+
+        function speak(text) {
+            if (synth.speaking || !text) return;
+            const utterThis = new SpeechSynthesisUtterance(text);
+            utterThis.lang = 'ko-KR';
+            utterThis.pitch = 1.2;
+            utterThis.rate = (currentCategory === 'cat6') ? 0.9 : 0.8;
+            synth.speak(utterThis);
+        }
+
+        // AI로 퀴즈 문제 생성
+        async function generateQuizSet(category, count) {
+            const description = categoryPrompts[category];
+            const prompt = `${description} 퀴즈를 만들려고 해. 각 문제마다 정답 1개와 그럴듯한 오답 2개를 포함해서 총 3개의 보기를 만들어줘. 전체 ${count}개의 문제를 JSON 형식으로 만들어줘. 형식은 {"quiz": [{"answer": "정답", "choices": ["보기1", "보기2", "보기3"]}]} 이야. choices 배열 안에는 반드시 answer가 포함되어야 하고, 3개의 보기들은 서로 달라야 해.`;
+            
+            const apiKey = ""; // API 키가 필요하면 여기에 입력
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            quiz: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        answer: { type: "STRING" },
+                                        choices: { type: "ARRAY", items: { type: "STRING" } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`API 요청 실패: ${response.status}`);
+                }
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                return JSON.parse(jsonText).quiz;
+            } catch (error) {
+                console.error("AI 문제 생성 오류:", error);
+                alert("AI가 문제를 만들다가 지쳤나봐요! 잠시 후 다시 시도해주세요.");
+                return null;
+            }
+        }
+
+        // 카테고리 선택 처리
+        categoryContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+                e.target.classList.add('selected');
+                currentCategory = e.target.dataset.category;
+            }
+        });
+        
+        // 퀴즈 시작
+        startButton.addEventListener('click', async () => {
+            totalQuestions = parseInt(document.getElementById('questionCount').value, 10);
+            if (isNaN(totalQuestions) || totalQuestions < 1) {
+                alert('퀴즈 문항 수를 1 이상으로 설정해주세요.');
+                return;
+            }
+            
+            // 로딩 상태 표시
+            startButtonText.textContent = 'AI가 문제 만드는 중...';
+            loadingIndicator.classList.remove('hidden');
+            startButton.disabled = true;
+
+            currentQuizSet = await generateQuizSet(currentCategory, totalQuestions);
+
+            // 로딩 상태 해제
+            startButtonText.textContent = '퀴즈 시작!';
+            loadingIndicator.classList.add('hidden');
+            startButton.disabled = false;
+
+            if (!currentQuizSet || currentQuizSet.length < totalQuestions) {
+                alert('문제 생성에 실패했어요. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+
+            score = 0;
+            currentQuestionIndex = -1; // nextQuestion에서 0으로 시작
+            setupView.classList.add('hidden');
+            resultView.classList.add('hidden');
+            quizView.classList.remove('hidden');
+            nextQuestion();
+        });
+
+        function nextQuestion() {
+            isChecking = false;
+            currentQuestionIndex++;
+            if (currentQuestionIndex >= totalQuestions) {
+                showResult();
+                return;
+            }
+
+            progressIndicator.textContent = `문제 ${currentQuestionIndex + 1} / ${totalQuestions}`;
+            messageEl.textContent = '소리를 듣고 정답을 골라봐!';
+            messageEl.className = 'text-3xl text-gray-700 font-bold h-12 flex items-center justify-center mb-6';
+
+            const question = currentQuizSet[currentQuestionIndex];
+            currentAnswer = question.answer;
+            const shuffledChoices = [...question.choices].sort(() => 0.5 - Math.random());
+            const shuffledColors = [...colors].sort(() => 0.5 - Math.random());
+
+            choiceButtons.forEach((button, index) => {
+                button.textContent = shuffledChoices[index];
+                button.disabled = false;
+                button.className = 'choice p-4 text-3xl sm:text-4xl font-bold text-white rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-4';
+                button.classList.add(shuffledColors[index]);
+                button.classList.add(shuffledColors[index].replace('bg-', 'hover:bg-').replace('-500', '-600'));
+                button.classList.add(shuffledColors[index].replace('bg-', 'focus:ring-').replace('-500', '-300'));
+            });
+            
+            setTimeout(() => speak(currentAnswer), 500);
+        }
+
+        function checkAnswer(e) {
+            if (isChecking) return;
+            isChecking = true;
+
+            const selectedWord = e.target.textContent;
+            choiceButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedWord === currentAnswer) {
+                score++;
+                e.target.classList.add('animate-bounce-in');
+                messageEl.textContent = '정답! 잘했어요! 🎉';
+                messageEl.className = 'text-3xl text-green-500 font-bold h-12 flex items-center justify-center mb-6 animate-bounce-in';
+                speak('정답');
+            } else {
+                e.target.classList.add('animate-shake');
+                messageEl.textContent = '아쉽지만, 다음 문제로! 🤔';
+                messageEl.className = 'text-3xl text-red-500 font-bold h-12 flex items-center justify-center mb-6';
+                speak('오답');
+                choiceButtons.forEach(btn => {
+                    if (btn.textContent === currentAnswer) {
+                        btn.classList.add('ring-4', 'ring-offset-2', 'ring-green-400');
+                    }
+                });
+            }
+
+            setTimeout(nextQuestion, 1800);
+        }
+
+        function showResult() {
+            quizView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+
+            document.getElementById('totalResult').textContent = totalQuestions;
+            document.getElementById('scoreResult').textContent = score;
+            
+            const percentage = (score / totalQuestions) * 100;
+            const finalMessage = document.getElementById('finalMessage');
+            if (percentage === 100) {
+                finalMessage.textContent = "모든 문제를 맞혔어요! 정말 대단해요! 🏆";
+                finalMessage.className = "text-3xl font-bold mb-8 text-green-600";
+            } else if (percentage >= 70) {
+                finalMessage.textContent = "거의 다 맞혔네요! 조금만 더 힘내요! 👍";
+                finalMessage.className = "text-3xl font-bold mb-8 text-blue-600";
+            } else {
+                finalMessage.textContent = "괜찮아요! 다시 도전해볼까요? 😊";
+                finalMessage.className = "text-3xl font-bold mb-8 text-gray-600";
+            }
+        }
+
+        function goBackToSetup() {
+            synth.cancel(); // 진행 중인 tts 중단
+            quizView.classList.add('hidden');
+            resultView.classList.add('hidden');
+            setupView.classList.remove('hidden');
+        }
+
+        // 이벤트 리스너
+        backButton.addEventListener('click', goBackToSetup);
+        restartButton.addEventListener('click', goBackToSetup);
+        playButton.addEventListener('click', () => speak(currentAnswer));
+        choiceButtons.forEach(button => button.addEventListener('click', checkAnswer));
+        
+        // 기본 카테고리 선택
+        document.querySelector('.category-btn[data-category="cat5"]').classList.add('selected');
+
+    </script>
+</body>
+</html>
