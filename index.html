@@ -172,7 +172,7 @@
             const prompt = `${description} 퀴즈를 만들려고 해. 각 문제마다 정답 1개와 그럴듯한 오답 2개를 포함해서 총 3개의 보기를 만들어줘. 전체 ${count}개의 문제를 JSON 형식으로 만들어줘. 형식은 {"quiz": [{"answer": "정답", "choices": ["보기1", "보기2", "보기3"]}]} 이야. choices 배열 안에는 반드시 answer가 포함되어야 하고, 3개의 보기들은 서로 달라야 해.`;
             
             // 사용자의 API 키를 여기에 적용합니다.
-            const apiKey = "AIzaSyC7_Gq4LIVVMv0hMD6qSwcTlGJcDSt-KgI";
+            const apiKey = "AIzaSyCdMA2C97_6sE3NLYktT1fbwXvOXxhjeMg";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             const payload = {
