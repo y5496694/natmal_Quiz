@@ -54,19 +54,21 @@
 </head>
 <body class="bg-yellow-50 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-3xl mx-auto">
+    <div class="w-full max-w-4xl mx-auto">
         <!-- 1. 설정 화면 -->
         <div id="setupView" class="w-full bg-white rounded-2xl shadow-2xl p-6 sm:p-10 text-center">
             <h1 class="text-7xl sm:text-8xl text-yellow-600">AI 소리나는 낱말 퀴즈</h1>
             
             <h2 class="text-5xl text-gray-700 mt-8 mb-4">1. 학습 단계 선택하기</h2>
-            <div id="categoryContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div id="categoryContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <button data-category="cat1" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침없는 낱말 (ㅏ,ㅣ..)</button>
                 <button data-category="cat2" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침있는 낱말 (ㅏ,ㅣ..)</button>
                 <button data-category="cat3" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침없는 낱말 (ㅑ,ㅘ..)</button>
                 <button data-category="cat4" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">받침있는 낱말 (ㅑ,ㅘ..)</button>
-                <button data-category="cat5" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">단어</button>
-                <button data-category="cat6" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">문장</button>
+                <button data-category="cat5" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">쉬운 단어</button>
+                <button data-category="cat7" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">어려운 단어</button>
+                <button data-category="cat6" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">쉬운 문장</button>
+                <button data-category="cat8" class="category-btn p-3 text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 rounded-lg transition-all duration-300">어려운 문장</button>
             </div>
 
             <h2 class="text-5xl text-gray-700 mt-8 mb-4">2. 문항 수 정하기</h2>
@@ -125,8 +127,10 @@
             cat2: "받침이 있고 'ㅏ, ㅓ, ㅗ, ㅜ, ㅡ, ㅣ' 같은 단모음만 사용한, 초등학생 저학년 수준의 한글 낱말",
             cat3: "받침이 없고 'ㅑ, ㅕ, ㅘ, ㅝ' 같은 이중모음이 포함된, 초등학생 저학년 수준의 한글 낱말",
             cat4: "받침이 있고 'ㅑ, ㅕ, ㅘ, ㅝ' 같은 이중모음이 포함된, 초등학생 저학년 수준의 한글 낱말",
-            cat5: "초등학생 저학년 수준의 일반적인 두세 글자 한글 단어",
-            cat6: "초등학생 저학년 수준의 3~5개 어절로 이루어진 짧고 간단한 한글 문장"
+            cat5: "초등학생 저학년 수준의 쉬운 두세 글자 한글 단어",
+            cat6: "초등학생 저학년 수준의 3~5개 어절로 이루어진 짧고 쉬운 한글 문장",
+            cat7: "초등학생 고학년 수준의 받침이 복잡하거나 조금 더 긴 한글 단어",
+            cat8: "초등학생 고학년 수준의 5~7개 어절로 이루어진 조금 더 길고 복잡한 한글 문장"
         };
         
         const colors = [ 'bg-blue-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500' ];
@@ -162,7 +166,7 @@
             const utterThis = new SpeechSynthesisUtterance(text);
             utterThis.lang = 'ko-KR';
             utterThis.pitch = 1.2;
-            utterThis.rate = (currentCategory === 'cat6') ? 0.9 : 0.8;
+            utterThis.rate = (currentCategory === 'cat6' || currentCategory === 'cat8') ? 0.9 : 0.8;
             synth.speak(utterThis);
         }
 
@@ -172,7 +176,7 @@
             const prompt = `${description} 퀴즈를 만들려고 해. 각 문제마다 정답 1개와 그럴듯한 오답 2개를 포함해서 총 3개의 보기를 만들어줘. 전체 ${count}개의 문제를 JSON 형식으로 만들어줘. 형식은 {"quiz": [{"answer": "정답", "choices": ["보기1", "보기2", "보기3"]}]} 이야. choices 배열 안에는 반드시 answer가 포함되어야 하고, 3개의 보기들은 서로 달라야 해.`;
             
             // 사용자의 API 키를 여기에 적용합니다.
-            const apiKey = "AIzaSyCdMA2C97_6sE3NLYktT1fbwXvOXxhjeMg";
+            const apiKey = ""; // API 키를 여기에 입력하거나, 비워두면 Canvas 환경에서 제공됩니다.
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             const payload = {
